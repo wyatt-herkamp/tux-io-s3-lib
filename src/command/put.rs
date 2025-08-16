@@ -96,6 +96,9 @@ impl CommandType for PutObject<'_> {
         Method::PUT
     }
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
+        if self.key.starts_with("/"){
+            *url = url.join(&self.key[1..])?;
+        }
         *url = url.join(&self.key.as_ref())?;
         Ok(())
     }
