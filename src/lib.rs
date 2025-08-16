@@ -6,6 +6,7 @@ use thiserror::Error;
 use tux_io_s3_types::ContentParseError;
 
 use crate::{client::HttpResponseError, credentials::error::SigningRelatedError};
+pub use tux_io_s3_types  as types;
 pub mod client;
 pub mod command;
 pub mod credentials;
