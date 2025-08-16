@@ -1,0 +1,22 @@
+[package]
+name = "tux-io-s3-types"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+tokio = { version = "1.0", default-features = false, features = ["io-std", "io-util"] }
+quick-xml = { workspace = true, features = ["serialize", "async-tokio"] }
+form_urlencoded.workspace = true
+derive_more.workspace = true
+itertools.workspace = true
+url.workspace = true
+http.workspace = true
+http-body.workspace = true
+
+[features]
+client-testing = []

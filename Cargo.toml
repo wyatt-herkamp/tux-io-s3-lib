@@ -1,0 +1,62 @@
+[workspace]
+members = [ "cli", "types"]
+resolver = "3"
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+authors = ["Wyatt Herkamp <wherkamp@gmail.com>"]
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"
+tux-io-s3-types = { path = "./types" }
+form_urlencoded = "1"
+tokio = {version = "1"}
+quick-xml = { version = "0.38", features = ["serialize"] }
+derive_more = {version = "2", features = ["from"]}
+itertools = "0.14"
+url = { version = "2", features = ["serde"] }
+http = { version = "1" }
+http-body = "1"
+
+[package]
+name = "tux-io-s3"
+description = "TuxIO S3 Library"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+reqwest = { version = "0.12" ,features = ["stream"]}
+tokio = { workspace = true, features = ["full"]}
+thiserror.workspace=true
+quick-xml = {version = "0.38", features = ["async-tokio", "serialize"]}
+bytes = "1"
+tracing = { version = "0.1" }
+http = { version = "1" }
+http-body = "1"
+url = {version = "2"}
+percent-encoding = "2"
+chrono = { version = "0.4"}
+hmac = "0.12"
+sha2 = "0.10"
+md5 = "0.8"
+base64 = "0.22"
+tux-io-s3-types.workspace = true
+hex="0.4"
+pin-project = { version = "1.0"}
+futures = "0.3"
+ahash = "0.8"
+[dev-dependencies]
+anyhow = "1.0"
+rand = "0.9"
+tracing-subscriber = { version = "0.3", features = ["fmt","env-filter"] }
+tokio-util = { version = "0.7", features = ["io"] }
+toml = "0.9"
+[features]
+client-default-tls = ["reqwest/default-tls"]
+client-rustls-tls = ["reqwest/rustls-tls"]
+client-native-tls = ["reqwest/native-tls"]
+client-testing = []

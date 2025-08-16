@@ -1,0 +1,21 @@
+[package]
+name = "tux-io-s3-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+clap = { version = "4", features = ["derive"] }
+human-panic = "2.0"
+tux-io-s3-types = { path = "../types" }
+tux-io-s3 = { path = "../" }
+toml = "0.9"
+serde.workspace = true
+thiserror.workspace = true
+anyhow = "1"
+
+[features]
+client-testing = []
