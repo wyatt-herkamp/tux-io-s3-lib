@@ -4,7 +4,7 @@ mod bucket;
 mod builder;
 mod settings;
 pub use bucket::BucketClient;
-pub use builder::S3ClientBuilder;
+pub use builder::{S3ClientBuilder, BuilderError};
 use http::{
     HeaderValue,
     header::{AUTHORIZATION, CONTENT_ENCODING, CONTENT_LENGTH, DATE, HOST, TRANSFER_ENCODING},
