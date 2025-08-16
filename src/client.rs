@@ -23,7 +23,8 @@ use crate::{
     EMPTY_HASH, S3Error,
     client::inner::S3ClientInner,
     command::{
-        AccountCommandType, CommandType,        body::{S3CommandBodyInner, S3ContentStream},
+        AccountCommandType, CommandType,
+        body::{S3CommandBodyInner, S3ContentStream},
         list::buckets::ListBuckets,
     },
     credentials::{header::AWS4HMACSHA256HeaderBuilder, sha256_from_bytes},

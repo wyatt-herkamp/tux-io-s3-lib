@@ -1,6 +1,4 @@
-use tokio::io::AsyncBufRead;
-
-use crate::{AsyncDataExtract, DataExtract, list::v1::ListBucketResult};
+use crate::{DataExtract, list::v1::ListBucketResult};
 
 impl DataExtract for ListBucketResult {
     fn extract_data<R: std::io::BufRead>(reader: &mut R) -> Result<Self, crate::ContentParseError> {

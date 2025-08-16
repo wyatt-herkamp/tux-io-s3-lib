@@ -135,10 +135,10 @@ impl RegionType for S3Region {
         }
     }
     fn schema(&self) -> &str {
-        return match self {
+        match self {
             S3Region::Official(region) => region.endpoint().split("://").next().unwrap_or("https"),
             S3Region::Custom(region) => region.endpoint().split("://").next().unwrap_or("https"),
-        };
+        }
     }
 
     fn endpoint_url(&self) -> Url {

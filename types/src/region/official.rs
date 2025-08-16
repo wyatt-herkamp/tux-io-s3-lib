@@ -84,6 +84,7 @@ official_region!(
         key: "us-east-1"
     }
 );
+#[allow(clippy::derivable_impls)]
 impl Default for OfficialRegion {
     fn default() -> Self {
         OfficialRegion::UsEast1
