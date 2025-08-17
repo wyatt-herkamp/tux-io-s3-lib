@@ -1,13 +1,11 @@
-use bytes::Bytes;
 use http::{HeaderMap, Method};
-use tracing::debug;
 use tux_io_s3_types::tag::AnyTaggingSet;
 use url::Url;
 
 use crate::{
     S3Error,
     command::{BucketCommandType, CommandType, S3CommandBody},
-    utils::{XML_HEADER_VALUE_WITH_CHARSET, header::HeaderMapS3Ext},
+    utils::{XML_HEADER_VALUE_WITH_CHARSET, header::HeaderMapS3Ext, url::S3UrlExt},
 };
 
 pub struct PutTagging<'request> {
@@ -30,7 +28,7 @@ impl<'request> CommandType for PutTagging<'request> {
         Method::PUT
     }
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
-        *url = url.join(&self.key.as_ref())?;
+        url.append_path(&self.key.as_ref())?;
         url.query_pairs_mut().append_key_only("tagging");
         Ok(())
     }

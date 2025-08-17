@@ -1,3 +1,11 @@
+/*!
+## S3 Command Types
+
+## Implemented Bucket Commands
+
+
+
+*/
 use http::HeaderMap;
 use url::Url;
 pub mod body;

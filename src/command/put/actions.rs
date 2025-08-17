@@ -2,7 +2,10 @@ use http::{HeaderValue, Method};
 use tux_io_s3_types::headers::{X_AMZ_COPY_SOURCE, X_AMZ_RENAME_SOURCE};
 use url::Url;
 
-use crate::command::{BucketCommandType, CommandType};
+use crate::{
+    command::{BucketCommandType, CommandType},
+    utils::url::S3UrlExt,
+};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CopyObject<'request> {
     pub source: &'request str,
@@ -32,7 +35,7 @@ impl CommandType for CopyObject<'_> {
         Method::PUT
     }
     fn update_url(&self, url: &mut Url) -> Result<(), crate::S3Error> {
-        *url = url.join(self.destination.as_ref())?;
+        url.append_path(self.destination.as_ref())?;
         Ok(())
     }
     fn headers(&self, base: &mut http::HeaderMap) -> Result<(), crate::S3Error> {
@@ -74,7 +77,7 @@ impl CommandType for RenameObject<'_> {
         Method::PUT
     }
     fn update_url(&self, url: &mut Url) -> Result<(), crate::S3Error> {
-        *url = url.join(self.destination.as_ref())?;
+        url.append_path(self.destination.as_ref())?;
         url.query_pairs_mut().append_key_only("rename");
         Ok(())
     }

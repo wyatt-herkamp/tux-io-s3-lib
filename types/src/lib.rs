@@ -12,7 +12,7 @@ pub mod headers;
 pub mod list;
 pub mod owner;
 #[derive(Debug, Error)]
-pub enum ContentParseError {
+pub enum S3ContentError {
     #[error(transparent)]
     QuickXML(#[from] quick_xml::Error),
     #[error(transparent)]
@@ -21,16 +21,14 @@ pub enum ContentParseError {
     QuickXMLDeserializeError(#[from] quick_xml::de::DeError),
 }
 pub trait DataExtract {
-    fn extract_data<R: BufRead>(reader: &mut R) -> Result<Self, ContentParseError>
+    fn extract_data<R: BufRead>(reader: &mut R) -> Result<Self, S3ContentError>
     where
         Self: Sized;
 }
 
 #[allow(async_fn_in_trait)]
 pub trait AsyncDataExtract {
-    async fn extract_data<R: AsyncBufRead + Unpin>(
-        reader: &mut R,
-    ) -> Result<Self, ContentParseError>
+    async fn extract_data<R: AsyncBufRead + Unpin>(reader: &mut R) -> Result<Self, S3ContentError>
     where
         Self: Sized;
 }

@@ -115,6 +115,16 @@ pub enum S3Region {
     Official(OfficialRegion),
     Custom(CustomRegion),
 }
+impl From<OfficialRegion> for S3Region {
+    fn from(region: OfficialRegion) -> Self {
+        S3Region::Official(region)
+    }
+}
+impl From<CustomRegion> for S3Region {
+    fn from(region: CustomRegion) -> Self {
+        S3Region::Custom(region)
+    }
+}
 impl Default for S3Region {
     fn default() -> Self {
         S3Region::Official(OfficialRegion::default())

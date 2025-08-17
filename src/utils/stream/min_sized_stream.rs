@@ -8,7 +8,8 @@ use std::{
 };
 use tokio::io::AsyncRead;
 
-pub const DEFAULT_MINIMUM_SIZE: usize = 8 * 1000; // 8 KB
+pub const S3_MINIMUM_SIZE: usize = 8 * 1000; // 8 KB
+pub const S3_RECOMMENDED_SIZE: usize = 64 * 1000; // 64 KB
 pub const MAX_CAPACITY: usize = 1024 * 1024; // 1 MB
 pub type DynMinSizedStream = MinimumSizedStream<
     Box<dyn Error + Send + Sync>,
@@ -34,18 +35,22 @@ pub struct MinimumSizedStream<E, S: Stream<Item = Result<Bytes, E>>> {
 impl<E, S: Stream<Item = Result<Bytes, E>>> MinimumSizedStream<E, S> {
     pub fn new(stream: S) -> Self {
         let (low, high) = stream.size_hint();
+
         let capacity = high
-            .unwrap_or_else(|| low.max(DEFAULT_MINIMUM_SIZE))
+            .unwrap_or_else(|| low.max(S3_MINIMUM_SIZE))
             .min(MAX_CAPACITY);
-        Self::with_capacity(stream, capacity)
+        let mut result = Self::with_capacity(stream, capacity);
+        if Some(low) == high {
+            result.set_known_size(low);
+        }
+        result
     }
     pub fn with_capacity(stream: S, capacity: usize) -> Self {
-        let minimum_size = capacity.min(DEFAULT_MINIMUM_SIZE);
         Self {
             stream,
             known_size: None,
             current_read_bytes: 0,
-            minimum_size,
+            minimum_size: S3_RECOMMENDED_SIZE,
             buffer: BytesMut::with_capacity(capacity),
         }
     }
@@ -62,6 +67,14 @@ impl<E, S: Stream<Item = Result<Bytes, E>>> MinimumSizedStream<E, S> {
     pub fn with_known_size(mut self, size: usize) -> Self {
         self.set_known_size(size);
         self
+    }
+
+    pub fn bytes_left(&self) -> Option<usize> {
+        if let Some(known_size) = self.known_size {
+            Some(known_size - self.current_read_bytes)
+        } else {
+            None
+        }
     }
 }
 impl<E, S: Stream<Item = Result<Bytes, E>>> Stream for MinimumSizedStream<E, S> {
@@ -92,7 +105,8 @@ impl<E, S: Stream<Item = Result<Bytes, E>>> Stream for MinimumSizedStream<E, S> 
             }
         }
         *this.current_read_bytes += this.buffer.len();
-        Poll::Ready(Some(Ok(this.buffer.split().freeze())))
+        let result = this.buffer.split().freeze();
+        Poll::Ready(Some(Ok(result)))
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
         if let Some(size) = self.known_size {
@@ -119,13 +133,13 @@ pub struct MinimumSizedReaderStream<R: AsyncRead> {
 
 impl<R: AsyncRead> MinimumSizedReaderStream<R> {
     pub fn new(reader: R) -> Self {
-        let capacity = DEFAULT_MINIMUM_SIZE;
+        let capacity = S3_MINIMUM_SIZE;
         Self::with_capacity(reader, capacity)
     }
     pub fn with_capacity(reader: R, capacity: usize) -> MinimumSizedReaderStream<R> {
         Self {
             reader,
-            minimum_size: DEFAULT_MINIMUM_SIZE,
+            minimum_size: S3_MINIMUM_SIZE,
             buffer: BytesMut::with_capacity(capacity),
             current_read_bytes: 0,
             size_hint: (0, None),

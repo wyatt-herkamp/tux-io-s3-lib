@@ -1,5 +1,5 @@
 use percent_encoding::{AsciiSet, CONTROLS, utf8_percent_encode};
-use url::Url;
+use url::{ParseError, Url};
 
 pub const FRAGMENT: &AsciiSet = &CONTROLS
     // URL_RESERVED
@@ -40,6 +40,12 @@ pub trait S3UrlExt {
     fn canonical_query_string(&self) -> String;
     /// S3 Canonical URI String
     fn canonical_uri_string(&self) -> String;
+    /// Appends to the current URL path.
+    ///
+    /// Basically of argument path starts with `/` that part is ignored
+    ///
+    /// In All S3 Commands DO NOT USE [Url::join] use this function because of path style buckets
+    fn append_path(&mut self, path: &str) -> Result<(), ParseError>;
 }
 impl S3UrlExt for Url {
     fn canonical_query_string(&self) -> String {
@@ -62,6 +68,14 @@ impl S3UrlExt for Url {
 
         utf8_percent_encode(&decoded, FRAGMENT).to_string()
     }
+    fn append_path(&mut self, path: &str) -> Result<(), ParseError> {
+        if path.starts_with("/") {
+            (*self) = self.join(&path[1..])?;
+        } else {
+            *self = self.join(path)?;
+        }
+        Ok(())
+    }
 }
 #[cfg(test)]
 mod tests {
@@ -81,6 +95,36 @@ mod tests {
             assert_eq!(
                 url.canonical_query_string(),
                 "key=value&other=value2%20space"
+            );
+        }
+    }
+    #[test]
+    fn test_append_join() {
+        let cases = [
+            (
+                "https://example.com/bucket1/",
+                "test.txt",
+                "https://example.com/bucket1/test.txt",
+            ),
+            (
+                "https://example.com/bucket1/",
+                "/test.txt",
+                "https://example.com/bucket1/test.txt",
+            ),
+            (
+                "https://example.com/bucket1/",
+                "subdir/test.txt",
+                "https://example.com/bucket1/subdir/test.txt",
+            ),
+        ];
+
+        for (base, path, expected) in cases {
+            let mut url = Url::parse(base).unwrap();
+            url.append_path(path).unwrap();
+            assert_eq!(
+                url.as_str(),
+                expected,
+                "Failed to add part to {base:?} with part {path:?}"
             );
         }
     }

@@ -10,7 +10,7 @@ use std::{
 use tux_io_s3_types::Service;
 
 use crate::{
-    EMPTY_HASH, S3Error,
+    EMPTY_HASH,
     command::body::create_payload_signature,
     credentials::{error::SigningRelatedError, sha256_from_bytes, sign_content},
     utils::stream::MinimumSizedStream,
@@ -55,8 +55,6 @@ impl<E: Into<Box<dyn Error + Send + Sync>>, S: Stream<Item = Result<Bytes, E>>>
 pub enum S3ContentStreamError {
     #[error(transparent)]
     InternalError(Box<dyn Error + Send + Sync>),
-    #[error(transparent)]
-    S3Error(S3Error),
     #[error(transparent)]
     SigningRelatedError(SigningRelatedError),
 }

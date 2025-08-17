@@ -9,9 +9,10 @@ mod tagging;
 use crate::{
     S3Error,
     command::{BucketCommandType, CommandType, S3CommandBody},
-    utils::header::HeaderMapS3Ext,
+    utils::{header::HeaderMapS3Ext, url::S3UrlExt},
 };
 mod multipart;
+pub use actions::*;
 pub use multipart::*;
 pub use tagging::*;
 pub static AMZ_METADATA_PREFIX: &str = "x-amz-meta-";
@@ -96,10 +97,7 @@ impl CommandType for PutObject<'_> {
         Method::PUT
     }
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
-        if self.key.starts_with("/"){
-            *url = url.join(&self.key[1..])?;
-        }
-        *url = url.join(&self.key.as_ref())?;
+        url.append_path(&self.key.as_ref())?;
         Ok(())
     }
     fn headers(&self, base: &mut HeaderMap) -> Result<(), S3Error> {

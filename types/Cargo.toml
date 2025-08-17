@@ -9,7 +9,10 @@ authors.workspace = true
 [dependencies]
 serde.workspace = true
 thiserror.workspace = true
-tokio = { version = "1.0", default-features = false, features = ["io-std", "io-util"] }
+tokio = { version = "1.0", default-features = false, features = [
+  "io-std",
+  "io-util",
+] }
 quick-xml = { workspace = true, features = ["serialize", "async-tokio"] }
 form_urlencoded.workspace = true
 derive_more.workspace = true

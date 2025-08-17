@@ -3,6 +3,7 @@ use http::Method;
 use crate::{
     S3Error,
     command::{BucketCommandType, CommandType},
+    utils::url::S3UrlExt,
 };
 
 #[derive(Debug, Clone)]
@@ -34,7 +35,7 @@ impl CommandType for DeleteObjectTagging<'_> {
         Method::DELETE
     }
     fn update_url(&self, url: &mut url::Url) -> Result<(), S3Error> {
-        *url = url.join(self.key.as_ref())?;
+        url.append_path(self.key.as_ref())?;
         url.query_pairs_mut().append_key_only("tagging");
         if let Some(version_id) = &self.version_id {
             url.query_pairs_mut().append_pair("versionId", version_id);

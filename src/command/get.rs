@@ -7,6 +7,7 @@ mod tagging;
 use crate::{
     InvalidResponseHeader,
     command::{BucketCommandType, CommandType},
+    utils::url::S3UrlExt,
 };
 pub use tagging::*;
 #[derive(Debug, Clone, Copy)]
@@ -91,7 +92,7 @@ impl CommandType for GetObject<'_> {
         Method::GET
     }
     fn update_url(&self, url: &mut url::Url) -> Result<(), crate::S3Error> {
-        *url = url.join(self.key.as_ref())?;
+        url.append_path(self.key.as_ref())?;
         Ok(())
     }
     fn headers(&self, base: &mut http::HeaderMap) -> Result<(), crate::S3Error> {

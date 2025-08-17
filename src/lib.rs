@@ -3,10 +3,10 @@ use std::fmt::Display;
 pub use http;
 use http::{HeaderName, HeaderValue, header::InvalidHeaderValue};
 use thiserror::Error;
-use tux_io_s3_types::ContentParseError;
+use tux_io_s3_types::S3ContentError;
 
 use crate::{client::HttpResponseError, credentials::error::SigningRelatedError};
-pub use tux_io_s3_types  as types;
+pub use tux_io_s3_types as types;
 pub mod client;
 pub mod command;
 pub mod credentials;
@@ -26,11 +26,15 @@ pub enum S3Error {
     #[error(transparent)]
     URLParseError(#[from] url::ParseError),
     #[error(transparent)]
-    ContentError(#[from] ContentParseError),
+    ContentError(#[from] S3ContentError),
     #[error(transparent)]
     SigningRelatedError(#[from] SigningRelatedError),
     #[error(transparent)]
     HttpError(Box<HttpResponseError>),
+    #[error("Chunk Must be atleast 8KB")]
+    ChunkTooSmall(usize),
+    #[error("Error Reading Body From Stream")]
+    BodyReadError(Box<dyn std::error::Error + Send + Sync>),
 }
 impl From<HttpResponseError> for S3Error {
     fn from(error: HttpResponseError) -> Self {

@@ -3,7 +3,7 @@ use url::Url;
 
 use crate::{
     command::{BucketCommandType, CommandType},
-    utils::header::s3_headers::S3HeadersExt,
+    utils::{header::s3_headers::S3HeadersExt, url::S3UrlExt},
 };
 
 #[derive(Debug, Clone)]
@@ -21,7 +21,7 @@ impl CommandType for HeadObject<'_> {
         Method::HEAD
     }
     fn update_url(&self, url: &mut Url) -> Result<(), crate::S3Error> {
-        *url = url.join(self.key.as_ref())?;
+        url.append_path(self.key.as_ref())?;
         Ok(())
     }
 }
@@ -44,7 +44,7 @@ mod tests {
         #[tokio::test]
         async fn test_head_object() -> anyhow::Result<()> {
             init_test_logger();
-            let path = "test_file.txt";
+            let path = "test-file.txt";
             let client = create_test_bucket_client();
             let Some(response) = client.head_object(path).await? else {
                 panic!("Expected a response, got None");

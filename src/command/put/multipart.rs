@@ -7,7 +7,7 @@ use url::Url;
 use crate::{
     S3Error,
     command::{BucketCommandType, CommandType, S3CommandBody, put::PutHeaders},
-    utils::header::HeaderMapS3Ext,
+    utils::{XML_HEADER_VALUE, header::HeaderMapS3Ext, url::S3UrlExt},
 };
 
 pub struct CreateMultipartUpload<'request> {
@@ -49,7 +49,7 @@ impl CommandType for PutPart<'_> {
         Method::PUT
     }
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
-        *url = url.join(&self.key.as_ref())?;
+        url.append_path(&self.key.as_ref())?;
 
         url.query_pairs_mut()
             .append_pair("partNumber", &self.part_number.to_string())
@@ -76,12 +76,13 @@ impl CommandType for CompleteMultipartUpload<'_> {
         Method::POST
     }
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
-        *url = url.join(&self.key.as_ref())?;
+        url.append_path(&self.key.as_ref())?;
         url.query_pairs_mut()
             .append_pair("uploadId", &self.upload_id);
         Ok(())
     }
-    fn headers(&self, _: &mut HeaderMap) -> Result<(), S3Error> {
+    fn headers(&self, header: &mut HeaderMap) -> Result<(), S3Error> {
+        header.content_type(XML_HEADER_VALUE);
         Ok(())
     }
     fn into_body(self) -> Result<S3CommandBody, S3Error> {
@@ -100,7 +101,7 @@ impl CommandType for AbortMultipartUpload<'_> {
         Method::DELETE
     }
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
-        *url = url.join(&self.key.as_ref())?;
+        url.append_path(&self.key.as_ref())?;
         url.query_pairs_mut()
             .append_pair("uploadId", &self.upload_id);
         Ok(())

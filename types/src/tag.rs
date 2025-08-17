@@ -4,7 +4,7 @@ pub use tag_type::*;
 mod validation;
 pub use validation::*;
 
-use crate::ContentParseError;
+use crate::S3ContentError;
 mod extractor;
 pub const TAGGING_HEADER: HeaderName = HeaderName::from_static("x-amz-tagging");
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
@@ -36,7 +36,7 @@ impl<'a> AnyTaggingSet<'a> {
             AnyTaggingSet::Owned(tags) => tags.to_header_value(),
         }
     }
-    pub fn to_xml_string(&self) -> Result<String, ContentParseError> {
+    pub fn to_xml_string(&self) -> Result<String, S3ContentError> {
         match self {
             AnyTaggingSet::Borrowed(tags) => Ok(quick_xml::se::to_string(tags)?),
             AnyTaggingSet::Cow(tags) => Ok(quick_xml::se::to_string(tags)?),
@@ -51,6 +51,13 @@ pub type OwnedTaggingSet = Tagging<OwnedTag>;
 pub struct Tagging<Tag: TagType> {
     #[serde(rename = "TagSet")]
     pub tag_set: TagSet<Tag>,
+}
+impl<Tag: TagType> From<Vec<Tag>> for Tagging<Tag> {
+    fn from(tags: Vec<Tag>) -> Self {
+        Self {
+            tag_set: TagSet::from(tags),
+        }
+    }
 }
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct TagSet<Tag: TagType> {

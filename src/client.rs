@@ -1,34 +1,23 @@
-use std::{borrow::Cow, sync::Arc};
+use std::sync::Arc;
 
 mod bucket;
 mod builder;
 mod settings;
 pub use bucket::BucketClient;
-pub use builder::{S3ClientBuilder, BuilderError};
-use http::{
-    HeaderValue,
-    header::{AUTHORIZATION, CONTENT_ENCODING, CONTENT_LENGTH, DATE, HOST, TRANSFER_ENCODING},
-};
-use reqwest::{Body, Response};
+pub use builder::{BuilderError, S3ClientBuilder};
+use http::HeaderValue;
+use reqwest::Response;
 use tracing::{debug, field::Empty};
 use tux_io_s3_types::{
-    Service,
-    headers::{X_AMZ_CONTENT_SHA256, X_AMZ_DATE, X_AMZ_DECODED_CONTENT_LENGTH},
     list::buckets::ListAllMyBuckets,
     region::{RegionType, S3Region},
 };
 use url::Url;
 pub mod inner;
 use crate::{
-    EMPTY_HASH, S3Error,
+    S3Error,
     client::inner::S3ClientInner,
-    command::{
-        AccountCommandType, CommandType,
-        body::{S3CommandBodyInner, S3ContentStream},
-        list::buckets::ListBuckets,
-    },
-    credentials::{header::AWS4HMACSHA256HeaderBuilder, sha256_from_bytes},
-    utils::LONG_DATE_FORMAT,
+    command::{AccountCommandType, CommandType, list::buckets::ListBuckets},
 };
 mod errors;
 pub use errors::*;
@@ -84,113 +73,11 @@ impl S3Client {
             status_code = Empty
         );
         let _enter = span.enter();
-        let credentials = self.client.credentials.read().await;
-        let mut url = self.url()?;
-        command.update_url(&mut url)?;
+        let url = self.url()?;
         debug!(%url, "Executing S3 command");
-        let now = chrono::Utc::now();
-        let mut headers = http::HeaderMap::new();
-        headers.insert(HOST, HeaderValue::from_str(&self.host()?)?);
-        headers.append(
-            X_AMZ_DATE,
-            HeaderValue::from_str(&now.format(LONG_DATE_FORMAT).to_string())?,
-        );
-        command.headers(&mut headers)?;
-        let http_method = command.http_method();
-        let body = command.into_body()?;
-        let mut auth_header = AWS4HMACSHA256HeaderBuilder::default()
-            .date_time(now)
-            .region(&self.client.region)
-            .url(&url);
-        {
-            if let Some((access_key, secret_key)) = credentials.access_key_and_secret() {
-                auth_header = auth_header.authentication(access_key, secret_key)
-            }
-        }
+        let host = HeaderValue::from_str(&self.host()?)?;
 
-        let body = match body.inner {
-            S3CommandBodyInner::None => {
-                headers.append(X_AMZ_CONTENT_SHA256, HeaderValue::from_str(EMPTY_HASH)?);
-                headers.append(CONTENT_LENGTH, HeaderValue::from_str(&format!("{}", 0))?);
-                auth_header =
-                    auth_header.request_info(http_method.clone(), Cow::Borrowed(EMPTY_HASH));
-                auth_header = auth_header.headers(&headers);
-                let auth_header = auth_header.build()?;
-                headers.append(AUTHORIZATION, auth_header.header_value()?);
-                headers.insert(DATE, HeaderValue::from_str(&now.to_rfc2822())?);
-                None
-            }
-            S3CommandBodyInner::FixedSize(body) => {
-                let sha256 = sha256_from_bytes(&body);
-                let content_length = body.len();
-                headers.append(X_AMZ_CONTENT_SHA256, HeaderValue::from_str(&sha256)?);
-                headers.append(
-                    CONTENT_LENGTH,
-                    HeaderValue::from_str(&format!("{}", content_length))?,
-                );
-                auth_header = auth_header.request_info(http_method.clone(), Cow::Owned(sha256));
-                auth_header = auth_header.headers(&headers);
-                let auth_header = auth_header.build()?;
-                headers.append(AUTHORIZATION, auth_header.header_value()?);
-                headers.insert(DATE, HeaderValue::from_str(&now.to_rfc2822())?);
-                Some(reqwest::Body::from(body))
-            }
-            S3CommandBodyInner::Stream {
-                stream,
-                content_length,
-            } => {
-                headers.append(
-                    X_AMZ_CONTENT_SHA256,
-                    HeaderValue::from_static("STREAMING-AWS4-HMAC-SHA256-PAYLOAD"),
-                );
-                headers.append(TRANSFER_ENCODING, HeaderValue::from_static("chunked"));
-
-                headers.append(
-                    X_AMZ_DECODED_CONTENT_LENGTH,
-                    HeaderValue::from_str(&content_length.to_string())?,
-                );
-
-                headers.append(CONTENT_ENCODING, HeaderValue::from_static("aws-chunked"));
-
-                auth_header = auth_header
-                    .request_info(
-                        http_method.clone(),
-                        Cow::Borrowed("STREAMING-AWS4-HMAC-SHA256-PAYLOAD"),
-                    )
-                    .headers(&headers);
-
-                let signing_key = auth_header.signature.key()?;
-
-                let auth_header = auth_header.build()?;
-                let previous_signature = auth_header.canonical_request.encode(&signing_key)?;
-                headers.append(AUTHORIZATION, auth_header.header_value()?);
-                headers.insert(DATE, HeaderValue::from_str(&now.to_rfc2822())?);
-                let body_wrapper = S3ContentStream::<Box<dyn std::error::Error + Send + Sync>, _> {
-                    stream: stream,
-                    time: now,
-                    previous_signature: previous_signature,
-                    region: self.client.region.name().to_string(),
-                    service: Service::S3,
-                    signing_key,
-                    sent_final_chunk: false,
-                };
-
-                Some(Body::wrap_stream(body_wrapper))
-            }
-        };
-        #[cfg(test)]
-        {
-            tracing::info!(?headers, "Executing S3 command with headers");
-        }
-        let mut response = self
-            .client
-            .http_client
-            .request(http_method, url)
-            .headers(headers);
-        if let Some(body) = body {
-            response = response.body(body);
-        }
-        let response = response.send().await?;
+        let response = self.client.execute_command(command, url, host).await?;
 
         span.record("status_code", response.status().as_u16());
         debug!("S3 Command Responded");
