@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use http::Method;
+use tux_io_s3_types::list::ListType;
 use url::Url;
 pub mod buckets;
 use crate::{
@@ -12,7 +13,11 @@ use crate::{
 pub struct ListObjectsV2<'request> {
     pub prefix: Cow<'request, str>,
     pub continuation_token: Option<Cow<'request, str>>,
-    pub delimiter: Cow<'request, str>,
+    /// Having a delimiter in the request changes how the request works.
+    /// No Delimiter will list everything
+    ///
+    /// With a delimiter will have results with Common Prefixes
+    pub delimiter: Option<Cow<'request, str>>,
     pub max_keys: Option<usize>,
     pub start_after: Option<usize>,
 }
@@ -21,7 +26,7 @@ impl Default for ListObjectsV2<'_> {
         Self {
             prefix: Cow::Borrowed(""),
             continuation_token: None,
-            delimiter: Cow::Borrowed("/"),
+            delimiter: None,
             max_keys: None,
             start_after: None,
         }
@@ -32,7 +37,7 @@ impl<'request> ListObjectsV2<'request> {
     where
         D: Into<Cow<'request, str>>,
     {
-        self.delimiter = delimiter.into();
+        self.delimiter = Some(delimiter.into());
         self
     }
     pub fn with_prefix<P>(mut self, prefix: P) -> Self
@@ -60,9 +65,11 @@ impl CommandType for ListObjectsV2<'_> {
 
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
         url.query_pairs_mut()
-            .append_pair("list-type", "2")
-            .append_pair("prefix", &self.prefix)
-            .append_pair("delimiter", &self.delimiter);
+            .append_pair("list-type", ListType::Version2.as_ref())
+            .append_pair("prefix", &self.prefix);
+        if let Some(delimiter) = &self.delimiter {
+            url.query_pairs_mut().append_pair("delimiter", delimiter);
+        }
         if let Some(continuation_token) = &self.continuation_token {
             url.query_pairs_mut()
                 .append_pair("continuation-token", continuation_token);
@@ -91,7 +98,7 @@ mod tests {
         let command = ListObjectsV2 {
             prefix: Cow::Borrowed("test/"),
             continuation_token: Some(Cow::Borrowed("token")),
-            delimiter: Cow::Borrowed("/"),
+            delimiter: Some(Cow::Borrowed("/")),
             max_keys: Some(100),
             start_after: Some(50),
         };
@@ -105,7 +112,20 @@ mod tests {
     async fn request_check() -> anyhow::Result<()> {
         init_test_logger();
         let client = crate::test::create_test_bucket_client();
-        let result = client.list_objects_v2(ListObjectsV2::default()).await?;
+        let result = client
+            .list_objects_v2(ListObjectsV2 {
+                prefix: Cow::Borrowed("rfl/"),
+                ..Default::default()
+            })
+            .await?;
+        println!("{:#?}", result);
+
+        let result = client
+            .list_objects_v2(ListObjectsV2 {
+                delimiter: Some(Cow::Borrowed("/")),
+                ..Default::default()
+            })
+            .await?;
         println!("{:#?}", result);
         Ok(())
     }

@@ -3,7 +3,8 @@ use http::{HeaderName, HeaderValue, header::InvalidHeaderValue};
 pub use tag_type::*;
 mod validation;
 pub use validation::*;
-
+#[cfg(feature = "headers")]
+pub mod header;
 use crate::S3ContentError;
 mod extractor;
 pub const TAGGING_HEADER: HeaderName = HeaderName::from_static("x-amz-tagging");

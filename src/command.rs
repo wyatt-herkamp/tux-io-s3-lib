@@ -42,3 +42,4 @@ pub trait BucketCommandType: CommandType {}
 ///
 /// TODO: Find a better name
 pub trait AccountCommandType: CommandType {}
+
