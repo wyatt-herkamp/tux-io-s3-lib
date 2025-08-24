@@ -21,6 +21,7 @@ url.workspace = true
 http.workspace = true
 http-body.workspace = true
 headers = {version = "0.4", optional = true}
+chrono.workspace = true
 [features]
 default = ["headers"]
 client-testing = []

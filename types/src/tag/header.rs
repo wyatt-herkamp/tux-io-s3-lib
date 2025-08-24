@@ -30,7 +30,9 @@ impl Header for OwnedTaggingSet {
     }
 
     fn encode<E: Extend<http::HeaderValue>>(&self, values: &mut E) {
-        let header_value = self.to_header_value().expect("Failed to convert to header value");
+        let header_value = self
+            .to_header_value()
+            .expect("Failed to convert to header value");
         values.extend(std::iter::once(header_value));
     }
 }

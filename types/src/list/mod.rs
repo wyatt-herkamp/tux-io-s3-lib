@@ -1,4 +1,4 @@
-use std::{ fmt::Display};
+use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +10,7 @@ pub mod v2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
-pub enum ListType{
+pub enum ListType {
     Version2 = 2,
     Version1 = 1,
 }

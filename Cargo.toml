@@ -18,7 +18,7 @@ itertools = "0.14"
 url = { version = "2", features = ["serde"] }
 http = { version = "1" }
 http-body = "1"
-
+chrono = {version = "0.4", features = ["serde"] }
 [package]
 name = "tux-io-s3"
 description = "TuxIO S3 Library"

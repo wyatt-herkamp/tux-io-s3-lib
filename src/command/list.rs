@@ -20,6 +20,7 @@ pub struct ListObjectsV2<'request> {
     pub delimiter: Option<Cow<'request, str>>,
     pub max_keys: Option<usize>,
     pub start_after: Option<usize>,
+    pub fetch_owner: Option<bool>,
 }
 impl Default for ListObjectsV2<'_> {
     fn default() -> Self {
@@ -29,6 +30,7 @@ impl Default for ListObjectsV2<'_> {
             delimiter: None,
             max_keys: None,
             start_after: None,
+            fetch_owner: None,
         }
     }
 }
@@ -82,6 +84,10 @@ impl CommandType for ListObjectsV2<'_> {
             url.query_pairs_mut()
                 .append_pair("start-after", &start_after.to_string());
         }
+        if let Some(fetch_owner) = &self.fetch_owner {
+            url.query_pairs_mut()
+                .append_pair("fetch-owner", &fetch_owner.to_string());
+        }
         Ok(())
     }
 }
@@ -101,11 +107,12 @@ mod tests {
             delimiter: Some(Cow::Borrowed("/")),
             max_keys: Some(100),
             start_after: Some(50),
+            fetch_owner: Some(true),
         };
         command.update_url(&mut url).unwrap();
         assert_eq!(
             url.as_str(),
-            "https://example.com/bucket1/?list-type=2&prefix=test%2F&delimiter=%2F&continuation-token=token&max-keys=100&start-after=50"
+            "https://example.com/bucket1/?list-type=2&prefix=test%2F&delimiter=%2F&continuation-token=token&max-keys=100&start-after=50&fetch-owner=true"
         );
     }
     #[tokio::test]
