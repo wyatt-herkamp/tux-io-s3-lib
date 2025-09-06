@@ -1,7 +1,10 @@
 mod tagging;
 pub use tagging::*;
 
-use crate::{command::{BucketCommandType, CommandType}, utils::url::S3UrlExt};
+use crate::{
+    command::{BucketCommandType, CommandType},
+    utils::url::S3UrlExt,
+};
 #[derive(Debug, Clone)]
 pub struct DeleteObject<'request> {
     pub key: &'request str,

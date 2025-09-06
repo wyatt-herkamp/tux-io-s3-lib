@@ -25,16 +25,13 @@ impl From<Ranged> for HeaderValue {
         HeaderValue::from_str(&range).unwrap()
     }
 }
-pub struct GetObjectResponse<B: Body = reqwest::Body>(pub http::Response<B>);
-impl From<reqwest::Response> for GetObjectResponse<reqwest::Body> {
+pub struct GetObjectResponse(pub reqwest::Response);
+impl From<reqwest::Response> for GetObjectResponse {
     fn from(response: reqwest::Response) -> Self {
         GetObjectResponse(response.into())
     }
 }
-impl<B: Body> GetObjectResponse<B> {
-    pub fn into_body(self) -> B {
-        self.0.into_body()
-    }
+impl GetObjectResponse {
     pub fn status(&self) -> http::StatusCode {
         self.0.status()
     }
