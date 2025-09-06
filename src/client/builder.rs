@@ -148,6 +148,6 @@ mod tests {
             .with_access_type(AccessType::VirtualHostedStyle)
             .with_credentials(Credentials::default());
 
-        let client = builder.build().unwrap();
+        let _client = builder.build().unwrap();
     }
 }

@@ -4,13 +4,17 @@ use http::Method;
 use tux_io_s3_types::list::ListType;
 use url::Url;
 pub mod buckets;
+mod extensions;
 use crate::{
     S3Error,
     command::{BucketCommandType, CommandType},
 };
-
+pub use extensions::*;
+/// List Objects V2 Command
+///
+/// [AWS Docs](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html)
 #[derive(Debug, Clone)]
-pub struct ListObjectsV2<'request> {
+pub struct ListObjectsV2<'request, E: ListExtension = ()> {
     pub prefix: Cow<'request, str>,
     pub continuation_token: Option<Cow<'request, str>>,
     /// Having a delimiter in the request changes how the request works.
@@ -21,8 +25,12 @@ pub struct ListObjectsV2<'request> {
     pub max_keys: Option<usize>,
     pub start_after: Option<usize>,
     pub fetch_owner: Option<bool>,
+    pub extension: E,
 }
-impl Default for ListObjectsV2<'_> {
+impl<'request, E> Default for ListObjectsV2<'request, E>
+where
+    E: ListExtension + Default,
+{
     fn default() -> Self {
         Self {
             prefix: Cow::Borrowed(""),
@@ -31,10 +39,11 @@ impl Default for ListObjectsV2<'_> {
             max_keys: None,
             start_after: None,
             fetch_owner: None,
+            extension: E::default(),
         }
     }
 }
-impl<'request> ListObjectsV2<'request> {
+impl<'request, E: ListExtension> ListObjectsV2<'request, E> {
     pub fn with_delimiter<D>(mut self, delimiter: D) -> Self
     where
         D: Into<Cow<'request, str>>,
@@ -56,8 +65,22 @@ impl<'request> ListObjectsV2<'request> {
         self.continuation_token = Some(continuation_token.into());
         self
     }
+    pub fn with_extension<NE>(self, extension: NE) -> ListObjectsV2<'request, NE>
+    where
+        NE: ListExtension,
+    {
+        ListObjectsV2 {
+            prefix: self.prefix,
+            continuation_token: self.continuation_token,
+            delimiter: self.delimiter,
+            max_keys: self.max_keys,
+            start_after: self.start_after,
+            fetch_owner: self.fetch_owner,
+            extension,
+        }
+    }
 }
-impl CommandType for ListObjectsV2<'_> {
+impl<E: ListExtension> CommandType for ListObjectsV2<'_, E> {
     fn name(&self) -> &'static str {
         "ListObjectsV2"
     }
@@ -88,10 +111,11 @@ impl CommandType for ListObjectsV2<'_> {
             url.query_pairs_mut()
                 .append_pair("fetch-owner", &fetch_owner.to_string());
         }
+        self.extension.update_url(url)?;
         Ok(())
     }
 }
-impl BucketCommandType for ListObjectsV2<'_> {}
+impl<E: ListExtension> BucketCommandType for ListObjectsV2<'_, E> {}
 
 #[cfg(test)]
 mod tests {
@@ -101,13 +125,14 @@ mod tests {
     #[test]
     fn url_test() {
         let mut url = url::Url::parse("https://example.com/bucket1/").unwrap();
-        let command = ListObjectsV2 {
+        let command = ListObjectsV2::<()> {
             prefix: Cow::Borrowed("test/"),
             continuation_token: Some(Cow::Borrowed("token")),
             delimiter: Some(Cow::Borrowed("/")),
             max_keys: Some(100),
             start_after: Some(50),
             fetch_owner: Some(true),
+            ..Default::default()
         };
         command.update_url(&mut url).unwrap();
         assert_eq!(

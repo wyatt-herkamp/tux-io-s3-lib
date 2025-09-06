@@ -69,9 +69,9 @@ impl S3UrlExt for Url {
         utf8_percent_encode(&decoded, FRAGMENT).to_string()
     }
     fn append_path(&mut self, path: &str) -> Result<(), ParseError> {
-        if path.starts_with("/") {
-            (*self) = self.join(&path[1..])?;
-        } else {
+        if let Some(stripped) = path.strip_prefix("/"){
+            (*self) = self.join(stripped)?;
+        }else{
             *self = self.join(path)?;
         }
         Ok(())
@@ -91,7 +91,7 @@ mod tests {
             "http://example.com/bucket/list?key=value&other=value2%20space",
         ];
         for url in urls {
-            let url = Url::parse(url).expect(&format!("Failed to parse URL: {url}"));
+            let url = Url::parse(url).unwrap_or_else(|_| panic!("Failed to parse URL: {url}"));
             assert_eq!(
                 url.canonical_query_string(),
                 "key=value&other=value2%20space"

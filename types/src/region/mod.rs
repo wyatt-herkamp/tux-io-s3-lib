@@ -9,6 +9,7 @@ use crate::signature::SignatureVersions;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum S3Implementation {
     AWS,
+    Ceph,
     GenericCustom,
 }
 pub trait RegionType {
