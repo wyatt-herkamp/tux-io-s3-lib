@@ -69,9 +69,9 @@ impl S3UrlExt for Url {
         utf8_percent_encode(&decoded, FRAGMENT).to_string()
     }
     fn append_path(&mut self, path: &str) -> Result<(), ParseError> {
-        if let Some(stripped) = path.strip_prefix("/"){
+        if let Some(stripped) = path.strip_prefix("/") {
             (*self) = self.join(stripped)?;
-        }else{
+        } else {
             *self = self.join(path)?;
         }
         Ok(())
