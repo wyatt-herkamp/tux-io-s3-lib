@@ -53,6 +53,7 @@ pub struct Tagging<Tag: TagType> {
     #[serde(rename = "TagSet")]
     pub tag_set: TagSet<Tag>,
 }
+
 impl<Tag: TagType> From<Vec<Tag>> for Tagging<Tag> {
     fn from(tags: Vec<Tag>) -> Self {
         Self {
@@ -60,10 +61,15 @@ impl<Tag: TagType> From<Vec<Tag>> for Tagging<Tag> {
         }
     }
 }
+impl<Tag: TagType> From<Tagging<Tag>> for Vec<Tag> {
+    fn from(tagging: Tagging<Tag>) -> Self {
+        tagging.tag_set.tags
+    }
+}
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct TagSet<Tag: TagType> {
     #[serde(rename = "Tag")]
-    tags: Vec<Tag>,
+    pub tags: Vec<Tag>,
 }
 impl<Tag: TagType> From<Vec<Tag>> for TagSet<Tag> {
     fn from(tags: Vec<Tag>) -> Self {

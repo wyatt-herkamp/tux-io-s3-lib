@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -5,6 +7,13 @@ use serde::{Deserialize, Serialize};
 pub struct CommonPrefixes {
     pub prefix: Vec<String>,
 }
+impl Deref for CommonPrefixes {
+    type Target = Vec<String>;
+    fn deref(&self) -> &Self::Target {
+        &self.prefix
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
