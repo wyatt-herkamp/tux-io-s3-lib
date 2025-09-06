@@ -14,7 +14,6 @@ impl Deref for CommonPrefixes {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

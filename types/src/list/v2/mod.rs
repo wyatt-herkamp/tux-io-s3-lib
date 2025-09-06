@@ -22,14 +22,16 @@ pub struct ListBucketResult {
     pub common_prefixes: Option<CommonPrefixes>,
 }
 
-impl ListBucketResult{
-    pub fn has_contents(&self) -> bool{
+impl ListBucketResult {
+    pub fn has_contents(&self) -> bool {
         self.contents.as_ref().map_or(false, |c| !c.is_empty())
     }
-    pub fn has_common_prefixes(&self) -> bool{
-        self.common_prefixes.as_ref().map_or(false, |cp| !cp.prefix.is_empty())
+    pub fn has_common_prefixes(&self) -> bool {
+        self.common_prefixes
+            .as_ref()
+            .map_or(false, |cp| !cp.prefix.is_empty())
     }
-    pub fn is_empty(&self) -> bool{
+    pub fn is_empty(&self) -> bool {
         !self.has_contents() && !self.has_common_prefixes()
     }
 }
