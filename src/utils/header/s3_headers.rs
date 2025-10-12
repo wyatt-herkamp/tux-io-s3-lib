@@ -16,7 +16,7 @@ pub trait S3HeadersExt {
         let Some(value) = self.headers().get(&header_name) else {
             return Ok(None);
         };
-        parse_fn(&value)
+        parse_fn(value)
             .map(Some)
             .map_err(|source| InvalidResponseHeader {
                 name: header_name,

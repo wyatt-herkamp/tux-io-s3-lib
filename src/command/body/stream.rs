@@ -72,8 +72,8 @@ impl<E: Into<Box<dyn Error + Send + Sync>>, S: Stream<Item = Result<Bytes, E>>> 
                 let content = create_payload_signature(
                     *this.time,
                     this.previous_signature,
-                    &this.region,
-                    &this.service,
+                    this.region,
+                    this.service,
                     &hash,
                 );
                 let signature = match sign_content(&content, this.signing_key) {
@@ -103,8 +103,8 @@ impl<E: Into<Box<dyn Error + Send + Sync>>, S: Stream<Item = Result<Bytes, E>>> 
                     let content = create_payload_signature(
                         *this.time,
                         this.previous_signature,
-                        &this.region,
-                        &this.service,
+                        this.region,
+                        this.service,
                         EMPTY_HASH,
                     );
                     let signature = match sign_content(&content, this.signing_key) {

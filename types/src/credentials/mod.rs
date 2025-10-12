@@ -1,31 +1,21 @@
-use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
+use serde::{Deserialize, Serialize};
+use url::Url;
+mod assume_role_with_web_identity;
+pub use assume_role_with_web_identity::*;
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct Credentials {
-    pub access_key: Option<String>,
-    pub secret_key: Option<String>,
-    pub security_token: Option<String>,
-    pub session_token: Option<String>,
-    //pub expiration: Option<Rfc3339OffsetDateTime>,
+    /// AWS Access Key ID
+    pub access_key: String,
+    /// AWS Secret Access Key
+    pub secret_key: String,
 }
-impl Credentials {
-    pub fn load_from_local() -> Option<Self> {
-        let access_key = std::env::var("AWS_ACCESS_KEY_ID").ok();
-        let secret_key = std::env::var("AWS_SECRET_ACCESS_KEY").ok();
-        let security_token = std::env::var("AWS_SESSION_TOKEN").ok();
-        let credentials = Self {
-            access_key,
-            secret_key,
-            security_token,
-            session_token: None,
-        };
-        Some(credentials)
-    }
-    pub fn access_key_and_secret(&self) -> Option<(&str, &str)> {
-        if let (Some(access_key), Some(secret_key)) = (&self.access_key, &self.secret_key) {
-            Some((access_key.as_ref(), secret_key.as_ref()))
-        } else {
-            None
+impl From<&StsResponseCredentials> for Credentials {
+    fn from(value: &StsResponseCredentials) -> Self {
+        Self {
+            access_key: value.access_key_id.clone(),
+            secret_key: value.secret_access_key.clone(),
         }
     }
 }
@@ -36,18 +26,38 @@ pub enum CredentialsVariants {
         access_key: String,
         secret_key: String,
     },
+    AssumeRoleWithWebIdentity {
+        role_arn: String,
+        session_name: Option<String>,
+        web_identity_token_file: PathBuf,
+        sts_endpoint: Url,
+    },
 }
 impl CredentialsVariants {
     pub fn load_from_environment() -> Option<Self> {
         let access_key = std::env::var("AWS_ACCESS_KEY_ID").ok();
         let secret_key = std::env::var("AWS_SECRET_ACCESS_KEY").ok();
         if let (Some(access_key), Some(secret_key)) = (access_key, secret_key) {
-            Some(Self::AccessAndSecret {
+            return Some(Self::AccessAndSecret {
                 access_key,
                 secret_key,
-            })
-        } else {
-            None
+            });
         }
+        let role_arn = std::env::var("AWS_ROLE_ARN").ok()?;
+        let web_identity_token_file = std::env::var("AWS_WEB_IDENTITY_TOKEN_FILE").ok()?;
+        if let (Some(role_arn), Some(web_identity_token_file)) =
+            (Some(role_arn), Some(web_identity_token_file))
+        {
+            let sts_endpoint = std::env::var("AWS_STS_ENDPOINT")
+                .unwrap_or_else(|_| "https://sts.amazonaws.com".to_string());
+            let sts_endpoint = Url::parse(&sts_endpoint).ok()?;
+            return Some(Self::AssumeRoleWithWebIdentity {
+                role_arn,
+                web_identity_token_file: PathBuf::from(web_identity_token_file),
+                sts_endpoint,
+                session_name: std::env::var("AWS_SESSION_NAME").ok(),
+            });
+        }
+        None
     }
 }

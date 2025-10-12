@@ -12,6 +12,7 @@ use tux_io_s3_types::{
     list::buckets::ListAllMyBuckets,
     region::{RegionType, S3Region},
 };
+pub mod http_client;
 use url::Url;
 pub mod inner;
 use crate::{
@@ -46,11 +47,6 @@ impl S3Client {
             quick_xml::de::from_str(&response.text().await?).unwrap();
         Ok(list_buckets)
     }
-    /// Requires
-    ///   - `s3:CreateBucket` permission
-    //pub async fn create_bucket(&self, bucket: &str) -> Result<(), S3Error> {
-    //    todo!()
-    //}
 
     pub fn open_bucket(&self, bucket: &str) -> BucketClient {
         BucketClient {
@@ -95,7 +91,7 @@ impl S3Client {
             AccessType::VirtualHostedStyle => {
                 let raw_host = self.client.region.endpoint();
                 let url = format!("{}://{}", self.client.region.schema(), raw_host);
-                Url::parse(&url).map_err(|e| S3Error::from(e))
+                Url::parse(&url).map_err(S3Error::from)
             }
         }
     }
@@ -110,7 +106,7 @@ impl S3Client {
             }
             AccessType::VirtualHostedStyle => {
                 let raw_host = self.client.region.endpoint();
-                Ok(format!("{}", raw_host))
+                Ok(raw_host.to_string())
             }
         }
     }

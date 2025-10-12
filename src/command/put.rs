@@ -97,7 +97,7 @@ impl CommandType for PutObject<'_> {
         Method::PUT
     }
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
-        url.append_path(&self.key.as_ref())?;
+        url.append_path(self.key.as_ref())?;
         Ok(())
     }
     fn headers(&self, base: &mut HeaderMap) -> Result<(), S3Error> {

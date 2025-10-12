@@ -6,7 +6,7 @@ use crate::{
     utils::url::S3UrlExt,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct DeleteObjectTagging<'request> {
     pub key: &'request str,
     pub version_id: Option<&'request str>,
@@ -14,15 +14,7 @@ pub struct DeleteObjectTagging<'request> {
 impl<'request> From<&'request str> for DeleteObjectTagging<'request> {
     fn from(key: &'request str) -> Self {
         Self {
-            key: key,
-            version_id: None,
-        }
-    }
-}
-impl Default for DeleteObjectTagging<'static> {
-    fn default() -> Self {
-        Self {
-            key: "",
+            key,
             version_id: None,
         }
     }

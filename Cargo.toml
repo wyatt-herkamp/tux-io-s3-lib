@@ -30,7 +30,7 @@ authors.workspace = true
 [dependencies]
 serde.workspace = true
 reqwest = { version = "0.12", features = ["stream"] }
-tokio = { workspace = true, features = ["full"] }
+tokio = { workspace = true }
 tokio-util = { version = "0.7", features = ["io"] }
 
 thiserror.workspace = true
@@ -57,8 +57,10 @@ rand = "0.9"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 tokio-util = { version = "0.7", features = ["io"] }
 toml = "0.9"
+tokio = { workspace = true, features = ["test-util", "rt", "macros", "rt-multi-thread"] }
 [features]
 client-default-tls = ["reqwest/default-tls"]
 client-rustls-tls = ["reqwest/rustls-tls"]
 client-native-tls = ["reqwest/native-tls"]
 client-testing = []
+

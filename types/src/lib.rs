@@ -5,7 +5,7 @@ pub mod region;
 pub mod signature;
 pub mod tag;
 use std::io::BufRead;
-mod utils;
+pub mod utils;
 use thiserror::Error;
 use tokio::io::AsyncBufRead;
 pub mod headers;

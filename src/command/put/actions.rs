@@ -6,7 +6,7 @@ use crate::{
     command::{BucketCommandType, CommandType},
     utils::url::S3UrlExt,
 };
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CopyObject<'request> {
     pub source: &'request str,
     pub destination: &'request str,
@@ -17,15 +17,6 @@ impl<'request> CopyObject<'request> {
         Self {
             source,
             destination,
-        }
-    }
-}
-
-impl Default for CopyObject<'_> {
-    fn default() -> Self {
-        Self {
-            source: "",
-            destination: "",
         }
     }
 }
@@ -45,7 +36,7 @@ impl CommandType for CopyObject<'_> {
 }
 impl BucketCommandType for CopyObject<'_> {}
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct RenameObject<'request> {
     pub source: &'request str,
     pub destination: &'request str,
@@ -56,15 +47,6 @@ impl<'request> RenameObject<'request> {
         Self {
             source,
             destination,
-        }
-    }
-}
-
-impl Default for RenameObject<'_> {
-    fn default() -> Self {
-        Self {
-            source: "",
-            destination: "",
         }
     }
 }

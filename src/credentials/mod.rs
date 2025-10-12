@@ -1,9 +1,9 @@
 use hmac::Mac;
 
 use crate::credentials::error::SigningRelatedError;
-
 pub mod error;
 pub mod header;
+pub mod provider;
 pub mod signing;
 pub type Hmac256 = hmac::Hmac<sha2::Sha256>;
 pub fn sha256_from_bytes(bytes: &[u8]) -> String {

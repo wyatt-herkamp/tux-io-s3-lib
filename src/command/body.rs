@@ -67,11 +67,7 @@ impl S3CommandBodyInner {
             } => {
                 trace!(?content_length, "Reading SmallStream into Into A Fixed");
                 let mut bytes = BytesMut::with_capacity(content_length);
-                while let Some(item) = stream
-                    .try_next()
-                    .await
-                    .map_err(|err| S3Error::BodyReadError(err))?
-                {
+                while let Some(item) = stream.try_next().await.map_err(S3Error::BodyReadError)? {
                     bytes.extend_from_slice(&item);
                 }
                 let body = bytes.freeze();

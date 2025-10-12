@@ -20,7 +20,7 @@ impl CommandType for CreateMultipartUpload<'_> {
         Method::POST
     }
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
-        *url = url.join(&self.key.as_ref())?;
+        *url = url.join(self.key.as_ref())?;
         url.query_pairs_mut().append_key_only("uploads");
         Ok(())
     }
@@ -49,7 +49,7 @@ impl CommandType for PutPart<'_> {
         Method::PUT
     }
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
-        url.append_path(&self.key.as_ref())?;
+        url.append_path(self.key.as_ref())?;
 
         url.query_pairs_mut()
             .append_pair("partNumber", &self.part_number.to_string())
@@ -76,7 +76,7 @@ impl CommandType for CompleteMultipartUpload<'_> {
         Method::POST
     }
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
-        url.append_path(&self.key.as_ref())?;
+        url.append_path(self.key.as_ref())?;
         url.query_pairs_mut()
             .append_pair("uploadId", &self.upload_id);
         Ok(())
@@ -101,7 +101,7 @@ impl CommandType for AbortMultipartUpload<'_> {
         Method::DELETE
     }
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
-        url.append_path(&self.key.as_ref())?;
+        url.append_path(self.key.as_ref())?;
         url.query_pairs_mut()
             .append_pair("uploadId", &self.upload_id);
         Ok(())

@@ -5,7 +5,10 @@ use http::{HeaderName, HeaderValue, header::InvalidHeaderValue};
 use thiserror::Error;
 use tux_io_s3_types::S3ContentError;
 
-use crate::{client::HttpResponseError, credentials::error::SigningRelatedError};
+use crate::{
+    client::HttpResponseError,
+    credentials::{error::SigningRelatedError, provider::CredentialsProviderError},
+};
 pub use tux_io_s3_types as types;
 pub mod client;
 pub mod command;
@@ -33,8 +36,20 @@ pub enum S3Error {
     HttpError(Box<HttpResponseError>),
     #[error("Chunk Must be atleast 8KB")]
     ChunkTooSmall(usize),
+    #[error(transparent)]
+    CredentialsError(#[from] CredentialsProviderError),
     #[error("Error Reading Body From Stream")]
     BodyReadError(Box<dyn std::error::Error + Send + Sync>),
+}
+impl S3Error {
+    /// Returns the HTTP Status Code Related to this error if applicable.
+    pub fn status_code(&self) -> Option<http::StatusCode> {
+        match self {
+            S3Error::HttpError(err) => err.status_code(),
+            S3Error::CredentialsError(err) => err.status_code(),
+            _ => None,
+        }
+    }
 }
 impl From<HttpResponseError> for S3Error {
     fn from(error: HttpResponseError) -> Self {

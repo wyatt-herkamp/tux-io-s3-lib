@@ -1,15 +1,13 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use http::{
     HeaderValue,
     header::{AUTHORIZATION, CONTENT_ENCODING, CONTENT_LENGTH, DATE, HOST, TRANSFER_ENCODING},
 };
 use reqwest::{Body, Response};
-use tokio::sync::RwLock;
-use tracing::debug;
+use tracing::{debug, error};
 use tux_io_s3_types::{
     Service,
-    credentials::Credentials,
     headers::{X_AMZ_CONTENT_SHA256, X_AMZ_DATE, X_AMZ_DECODED_CONTENT_LENGTH},
     region::{RegionType, S3Region},
 };
@@ -17,29 +15,27 @@ use url::Url;
 
 use crate::{
     EMPTY_HASH, S3Error,
-    client::settings::AccessType,
+    client::{http_client::HttpClient, settings::AccessType},
     command::{
         CommandType,
         body::{FixedStream, S3ContentStream},
     },
-    credentials::{header::AWS4HMACSHA256HeaderBuilder, sha256_from_bytes},
+    credentials::{
+        header::AWS4HMACSHA256HeaderBuilder,
+        provider::{CredentialsProvider, CredentialsProviderType},
+        sha256_from_bytes,
+    },
     utils::LONG_DATE_FORMAT,
 };
 #[derive(Debug)]
-pub(crate) struct S3ClientInner {
-    pub(crate) http_client: reqwest::Client,
+pub(crate) struct S3ClientInner<Client: HttpClient = reqwest::Client> {
+    pub(crate) http_client: Client,
     pub(crate) region: S3Region,
     /// Should always be true for custom s3 clients.
-    ///
     pub(crate) access_type: AccessType,
-    pub(crate) credentials: RwLock<Credentials>,
+    pub(crate) credentials: Arc<CredentialsProvider>,
 }
-impl S3ClientInner {
-    #[allow(dead_code)]
-    pub async fn change_credentials(&self, credentials: Credentials) {
-        let mut lock = self.credentials.write().await;
-        *lock = credentials;
-    }
+impl<Client: HttpClient> S3ClientInner<Client> {
     /// Internal method to execute S3 commands.
     pub(crate) async fn execute_command<'request, T>(
         &'request self,
@@ -50,7 +46,17 @@ impl S3ClientInner {
     where
         T: CommandType + Send + 'request,
     {
-        let credentials = self.credentials.read().await;
+        let credentials = match self.credentials.provide(self.http_client.clone()).await {
+            Ok(ok) => ok,
+            Err(err) => {
+                error!(
+                    %err,
+                    provider = %self.credentials.name(),
+                    "Failed to get credentials from provider"
+                );
+                return Err(S3Error::CredentialsError(err));
+            }
+        };
         command.update_url(&mut url)?;
         debug!(%url, "Executing S3 command");
         let now = chrono::Utc::now();
@@ -66,12 +72,9 @@ impl S3ClientInner {
         let mut auth_header = AWS4HMACSHA256HeaderBuilder::default()
             .date_time(now)
             .region(&self.region)
-            .url(&url);
-        {
-            if let Some((access_key, secret_key)) = credentials.access_key_and_secret() {
-                auth_header = auth_header.authentication(access_key, secret_key)
-            }
-        }
+            .url(&url)
+            .authentication(&credentials.access_key, &credentials.secret_key);
+
         let fixed_body = body.inner.into_fixed_stream().await?;
 
         let body = match fixed_body {
@@ -132,9 +135,9 @@ impl S3ClientInner {
                 headers.append(AUTHORIZATION, auth_header.header_value()?);
                 headers.insert(DATE, HeaderValue::from_str(&now.to_rfc2822())?);
                 let body_wrapper = S3ContentStream::<Box<dyn std::error::Error + Send + Sync>, _> {
-                    stream: stream,
+                    stream,
                     time: now,
-                    previous_signature: previous_signature,
+                    previous_signature,
                     region: self.region.name().to_string(),
                     service: Service::S3,
                     signing_key,

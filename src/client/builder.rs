@@ -2,16 +2,18 @@ use std::sync::Arc;
 
 use http::HeaderValue;
 use reqwest::{Client, ClientBuilder};
-use tokio::sync::RwLock;
 use tracing::{debug, error};
 use tux_io_s3_types::{
-    credentials::Credentials,
+    credentials::CredentialsVariants,
     region::{RegionType, S3Implementation, S3Region},
 };
 
-use crate::client::{BucketClient, S3Client, S3ClientInner, settings::AccessType};
+use crate::{
+    client::{BucketClient, S3Client, S3ClientInner, settings::AccessType},
+    credentials::provider::CredentialsProvider,
+};
 /// Runtime User Agent Value
-static USER_AGENT_ENV_KEY: &'static str = "TUX_IO_S3_USER_AGENT";
+static USER_AGENT_ENV_KEY: &str = "TUX_IO_S3_USER_AGENT";
 /// Compile Time USER_AGENT_OVERRIDE
 static USER_AGENT_DEFAULT: Option<&'static str> = option_env!("TUX_IO_DEFAULT_USER_AGENT");
 /// Fall Back to `tux-io-s3/{VERSION}`
@@ -41,13 +43,13 @@ fn default_user_agent() -> HeaderValue {
 
     if let Some(user_agent) = USER_AGENT_DEFAULT {
         match HeaderValue::from_str(user_agent) {
-            Ok(header) => return header,
+            Ok(header) => header,
             Err(err) => {
                 panic!("Invalid user agent from compile time constant {user_agent} err: {err}");
             }
         }
     } else {
-        return BUILT_IN_DEFAULT_USER_AGENT;
+        BUILT_IN_DEFAULT_USER_AGENT
     }
 }
 #[derive(Debug)]
@@ -55,7 +57,7 @@ pub struct S3ClientBuilder {
     region: Option<S3Region>,
     client_builder: reqwest::ClientBuilder,
     access_type: Option<AccessType>,
-    credentials: Option<Credentials>,
+    credentials: Option<Arc<CredentialsProvider>>,
 }
 impl Default for S3ClientBuilder {
     fn default() -> Self {
@@ -84,7 +86,7 @@ impl S3ClientBuilder {
         self.access_type = Some(access_type);
         self
     }
-    pub fn with_credentials(mut self, credentials: Credentials) -> Self {
+    pub fn with_credentials(mut self, credentials: Arc<CredentialsProvider>) -> Self {
         self.credentials = Some(credentials);
         self
     }
@@ -96,11 +98,11 @@ impl S3ClientBuilder {
         let client: Client = self.client_builder.build()?;
         let credentials = if let Some(creds) = self.credentials {
             creds
-        } else if let Some(credentials) = Credentials::load_from_local() {
+        } else if let Some(credentials) = CredentialsVariants::load_from_environment() {
             debug!("Loaded Local credentials");
-            credentials
+            CredentialsProvider::from(credentials).into()
         } else {
-            Credentials::default()
+            CredentialsProvider::default().into()
         };
         let region = self.region.ok_or(BuilderError::MissingRegion)?;
 
@@ -113,9 +115,9 @@ impl S3ClientBuilder {
 
         let inner = S3ClientInner {
             http_client: client,
-            region: region,
+            region,
             access_type,
-            credentials: RwLock::new(credentials),
+            credentials,
         };
         Ok(Arc::new(inner))
     }
@@ -146,7 +148,7 @@ mod tests {
             .with_region(OfficialRegion::UsEast1)
             .http_client_builder(|client| client.timeout(Duration::from_secs(30)))
             .with_access_type(AccessType::VirtualHostedStyle)
-            .with_credentials(Credentials::default());
+            .with_credentials(CredentialsProvider::default().into());
 
         let _client = builder.build().unwrap();
     }

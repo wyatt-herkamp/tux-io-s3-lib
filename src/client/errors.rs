@@ -4,6 +4,14 @@ pub enum HttpResponseError {
     Response(reqwest::Response),
     ReqwestError(reqwest::Error),
 }
+impl HttpResponseError {
+    pub fn status_code(&self) -> Option<http::StatusCode> {
+        match self {
+            HttpResponseError::Response(response) => Some(response.status()),
+            HttpResponseError::ReqwestError(err) => err.status(),
+        }
+    }
+}
 impl From<reqwest::Response> for HttpResponseError {
     fn from(response: reqwest::Response) -> Self {
         HttpResponseError::Response(response)

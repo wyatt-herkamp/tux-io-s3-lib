@@ -6,14 +6,9 @@ use crate::{
     utils::{header::s3_headers::S3HeadersExt, url::S3UrlExt},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct HeadObject<'request> {
     pub key: &'request str,
-}
-impl Default for HeadObject<'_> {
-    fn default() -> Self {
-        Self { key: "" }
-    }
 }
 impl BucketCommandType for HeadObject<'_> {}
 impl CommandType for HeadObject<'_> {
@@ -28,7 +23,7 @@ impl CommandType for HeadObject<'_> {
 pub struct HeadObjectResponse(pub reqwest::Response);
 impl S3HeadersExt for HeadObjectResponse {
     fn headers(&self) -> &HeaderMap {
-        &self.0.headers()
+        self.0.headers()
     }
 }
 #[cfg(test)]

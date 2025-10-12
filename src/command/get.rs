@@ -2,7 +2,6 @@ use http::{
     HeaderName, HeaderValue, Method,
     header::{ACCEPT, CONTENT_LENGTH, RANGE},
 };
-use http_body::Body;
 mod tagging;
 use crate::{
     InvalidResponseHeader,
@@ -28,7 +27,7 @@ impl From<Ranged> for HeaderValue {
 pub struct GetObjectResponse(pub reqwest::Response);
 impl From<reqwest::Response> for GetObjectResponse {
     fn from(response: reqwest::Response) -> Self {
-        GetObjectResponse(response.into())
+        GetObjectResponse(response)
     }
 }
 impl GetObjectResponse {
@@ -49,7 +48,7 @@ impl GetObjectResponse {
         let Some(value) = self.headers().get(&header_name) else {
             return Ok(None);
         };
-        parse_fn(&value)
+        parse_fn(value)
             .map(Some)
             .map_err(|source| InvalidResponseHeader {
                 name: header_name,
@@ -69,20 +68,11 @@ impl GetObjectResponse {
         })
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct GetObject<'request> {
     pub key: &'request str,
     pub accept: Option<HeaderValue>,
     pub ranged: Option<Ranged>,
-}
-impl Default for GetObject<'_> {
-    fn default() -> Self {
-        Self {
-            key: "",
-            accept: None,
-            ranged: Default::default(),
-        }
-    }
 }
 impl CommandType for GetObject<'_> {
     fn http_method(&self) -> http::Method {

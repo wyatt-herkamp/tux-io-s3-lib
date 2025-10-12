@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Once};
+use std::{path::PathBuf, sync::{Arc, Once}};
 
 use serde::{Deserialize, Serialize};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
@@ -55,7 +55,7 @@ pub fn create_test_bucket_client() -> crate::client::BucketClient {
     crate::client::S3ClientBuilder::default()
         .with_region(region)
         .with_access_type(crate::client::AccessType::PathStyle)
-        .with_credentials(credentials)
+        .with_credentials(Arc::new(credentials.into()))
         .bucket_client(&bucket)
         .expect("Failed to create test bucket client")
 }
@@ -64,7 +64,7 @@ pub fn create_test_client() -> crate::client::S3Client {
     crate::client::S3ClientBuilder::default()
         .with_region(region)
         .with_access_type(crate::client::AccessType::PathStyle)
-        .with_credentials(credentials)
+        .with_credentials(Arc::new(credentials.into()))
         .build()
         .expect("Failed to create test bucket client")
 }

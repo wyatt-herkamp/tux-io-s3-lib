@@ -70,11 +70,8 @@ impl<E, S: Stream<Item = Result<Bytes, E>>> MinimumSizedStream<E, S> {
     }
 
     pub fn bytes_left(&self) -> Option<usize> {
-        if let Some(known_size) = self.known_size {
-            Some(known_size - self.current_read_bytes)
-        } else {
-            None
-        }
+        self.known_size
+            .map(|known_size| known_size - self.current_read_bytes)
     }
 }
 impl<E, S: Stream<Item = Result<Bytes, E>>> Stream for MinimumSizedStream<E, S> {

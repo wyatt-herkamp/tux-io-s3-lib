@@ -117,7 +117,7 @@ impl BucketClient {
         if !response.status().is_success() {
             return Err(HttpResponseError::from(response).into());
         }
-        Ok(Some(GetObjectResponse(response.into())))
+        Ok(Some(GetObjectResponse(response)))
     }
     /// A low-level method to execute any [BucketCommandType].
     ///

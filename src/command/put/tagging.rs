@@ -28,7 +28,7 @@ impl<'request> CommandType for PutTagging<'request> {
         Method::PUT
     }
     fn update_url(&self, url: &mut Url) -> Result<(), S3Error> {
-        url.append_path(&self.key.as_ref())?;
+        url.append_path(self.key.as_ref())?;
         url.query_pairs_mut().append_key_only("tagging");
         Ok(())
     }
@@ -37,7 +37,7 @@ impl<'request> CommandType for PutTagging<'request> {
         Ok(())
     }
     fn into_body(self) -> Result<S3CommandBody, S3Error> {
-        Ok(S3CommandBody::xml_content(&self.tagging)?)
+        S3CommandBody::xml_content(&self.tagging)
     }
 }
 impl BucketCommandType for PutTagging<'_> {}

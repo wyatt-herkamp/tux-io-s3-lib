@@ -6,18 +6,10 @@ use crate::{
     utils::{XML_HEADER_VALUE, url::S3UrlExt},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct GetObjectTagging<'request> {
     pub key: &'request str,
     pub version_id: Option<String>,
-}
-impl Default for GetObjectTagging<'static> {
-    fn default() -> Self {
-        Self {
-            key: "",
-            version_id: None,
-        }
-    }
 }
 impl CommandType for GetObjectTagging<'_> {
     fn name(&self) -> &'static str {
