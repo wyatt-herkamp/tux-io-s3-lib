@@ -24,12 +24,12 @@ pub struct ListBucketResult {
 
 impl ListBucketResult {
     pub fn has_contents(&self) -> bool {
-        self.contents.as_ref().map_or(false, |c| !c.is_empty())
+        self.contents.as_ref().is_some_and(|c| !c.is_empty())
     }
     pub fn has_common_prefixes(&self) -> bool {
         self.common_prefixes
             .as_ref()
-            .map_or(false, |cp| !cp.prefix.is_empty())
+            .is_some_and(|cp| !cp.prefix.is_empty())
     }
     pub fn is_empty(&self) -> bool {
         !self.has_contents() && !self.has_common_prefixes()

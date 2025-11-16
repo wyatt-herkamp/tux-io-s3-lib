@@ -55,7 +55,8 @@ impl MockOkClient {
         }
     }
     pub fn request_count(&self) -> usize {
-        self.request_counter.load(std::sync::atomic::Ordering::SeqCst)
+        self.request_counter
+            .load(std::sync::atomic::Ordering::SeqCst)
     }
 }
 impl HttpClient for MockOkClient {

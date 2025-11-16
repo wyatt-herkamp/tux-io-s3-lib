@@ -8,6 +8,7 @@ use std::io::BufRead;
 pub mod utils;
 use thiserror::Error;
 use tokio::io::AsyncBufRead;
+pub mod error;
 pub mod headers;
 pub mod list;
 pub mod owner;

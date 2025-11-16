@@ -1,6 +1,6 @@
 use http::{HeaderMap, Method};
 use url::Url;
-
+mod bucket;
 use crate::{
     command::{BucketCommandType, CommandType},
     utils::{header::s3_headers::S3HeadersExt, url::S3UrlExt},

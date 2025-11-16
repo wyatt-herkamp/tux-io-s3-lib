@@ -52,12 +52,14 @@ impl From<AmzMetadataName> for HeaderName {
 #[derive(Debug, Clone)]
 pub struct PutHeaders {
     pub content_type: Cow<'static, str>,
+    pub if_none_match: Option<Cow<'static, str>>,
     pub metadata: AHashMap<AmzMetadataName, HeaderValue>,
 }
 impl Default for PutHeaders {
     fn default() -> Self {
         Self {
             content_type: "application/octet-stream".into(),
+            if_none_match: None,
             metadata: AHashMap::default(),
         }
     }
@@ -66,6 +68,7 @@ impl PutHeaders {
     pub fn new(content_type: impl Into<Cow<'static, str>>) -> Self {
         Self {
             content_type: content_type.into(),
+            if_none_match: None,
             metadata: AHashMap::default(),
         }
     }
@@ -86,6 +89,7 @@ impl PutHeaders {
         self.metadata.insert(name, value);
     }
 }
+#[derive(Default)]
 pub struct PutObject<'request> {
     pub key: &'request str,
     pub tags: Option<AnyTaggingSet<'request>>,
@@ -104,6 +108,12 @@ impl CommandType for PutObject<'_> {
         base.content_type(self.headers.content_type.parse()?);
         if let Some(tags) = &self.tags {
             base.insert(TAGGING_HEADER, tags.to_header_value()?);
+        }
+        if let Some(if_none_match) = &self.headers.if_none_match {
+            base.insert(
+                http::header::IF_NONE_MATCH,
+                HeaderValue::from_str(if_none_match)?,
+            );
         }
         for (name, value) in &self.headers.metadata {
             base.insert(name.0.clone(), value.clone());
@@ -131,6 +141,51 @@ mod test {
             },
             test::{create_test_bucket_client, init_test_logger},
         };
+
+        #[tokio::test]
+        async fn test_conflict() -> anyhow::Result<()> {
+            init_test_logger();
+            let client = create_test_bucket_client();
+            let path = "conflict.txt";
+
+            let content = Bytes::from_static(b"This is a test file content.");
+            let borrowed_tags = BorrowedTaggingSet::new(vec![
+                BorrowedTag::from(("key1", "value1")),
+                BorrowedTag::from(("key2", "value2")),
+            ]);
+            let put_object = PutObject {
+                key: path,
+                tags: Some(AnyTaggingSet::Borrowed(borrowed_tags)),
+                content: S3CommandBody::from(content.clone()),
+                headers: PutHeaders {
+                    content_type: "text/plain".into(),
+                    ..Default::default()
+                },
+            };
+
+            let response = client.execute_command(put_object).await?;
+            assert!(
+                response.status().is_success(),
+                "Failed to upload file: {}",
+                response.text().await?
+            );
+
+            let put_object_conflict = PutObject {
+                key: path,
+                tags: None,
+                content: S3CommandBody::from(content),
+                headers: PutHeaders {
+                    content_type: "text/plain".into(),
+                    if_none_match: Some("*".into()),
+                    ..Default::default()
+                },
+            };
+            let response_conflict = client.execute_command(put_object_conflict).await?;
+            let text = response_conflict.text().await?;
+            println!("Conflict response: {}", text);
+
+            Ok(())
+        }
 
         #[tokio::test]
         async fn test_file_upload() -> anyhow::Result<()> {

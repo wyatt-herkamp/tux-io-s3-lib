@@ -1,4 +1,7 @@
-use std::{path::PathBuf, sync::{Arc, Once}};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Once},
+};
 
 use serde::{Deserialize, Serialize};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};

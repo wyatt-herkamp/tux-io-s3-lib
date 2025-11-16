@@ -266,7 +266,8 @@ mod tests {
     use chrono::{Duration, Local};
     use http::{HeaderMap, StatusCode};
     use tux_io_s3_types::credentials::{
-        AssumeRoleWithWebIdentityResponse, AssumeRoleWithWebIdentityResult, AssumedRoleUser, ResponseMetadata, StsResponseCredentials
+        AssumeRoleWithWebIdentityResponse, AssumeRoleWithWebIdentityResult, AssumedRoleUser,
+        ResponseMetadata, StsResponseCredentials,
     };
 
     use crate::{
@@ -322,7 +323,7 @@ mod tests {
         let response = MockResponse {
             status: StatusCode::OK,
             headers: HeaderMap::new(),
-            body: body,
+            body,
         };
         let mock_client = MockOkClient::new(response);
 
