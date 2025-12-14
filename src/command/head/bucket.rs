@@ -9,7 +9,7 @@ impl CommandType for HeadBucket {
     fn http_method(&self) -> http::Method {
         Method::HEAD
     }
-    fn update_url(&self, url: &mut Url) -> Result<(), crate::S3Error> {
+    fn update_url(&self, _url: &mut Url) -> Result<(), crate::S3Error> {
         Ok(())
     }
 }

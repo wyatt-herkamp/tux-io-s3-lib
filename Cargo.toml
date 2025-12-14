@@ -6,6 +6,7 @@ version = "0.1.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 authors = ["Wyatt Herkamp <wherkamp@gmail.com>"]
+rust-version = "1.89"
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "2.0"
@@ -18,7 +19,7 @@ itertools = "0.14"
 url = { version = "2", features = ["serde"] }
 http = { version = "1" }
 http-body = "1"
-chrono = {version = "0.4", features = ["serde"] }
+chrono = { version = "0.4", features = ["serde"] }
 [package]
 name = "tux-io-s3"
 description = "TuxIO S3 Library"
@@ -57,10 +58,14 @@ rand = "0.9"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 tokio-util = { version = "0.7", features = ["io"] }
 toml = "0.9"
-tokio = { workspace = true, features = ["test-util", "rt", "macros", "rt-multi-thread"] }
+tokio = { workspace = true, features = [
+  "test-util",
+  "rt",
+  "macros",
+  "rt-multi-thread",
+] }
 [features]
 client-default-tls = ["reqwest/default-tls"]
 client-rustls-tls = ["reqwest/rustls-tls"]
 client-native-tls = ["reqwest/native-tls"]
 client-testing = []
-
